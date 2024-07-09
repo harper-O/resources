@@ -1,0 +1,68 @@
+Certainly! Here's a Python script that uses the GitHub API to pull all repositories in an organization that are using GitHub Secrets:
+pythonCopyimport requests
+
+# GitHub API endpoint for listing repositories in an organization
+api_url = "https://api.github.com/orgs/{org}/repos"
+
+# GitHub personal access token
+access_token = "YOUR_PERSONAL_ACCESS_TOKEN"
+
+# Headers for authentication and API version
+headers = {
+    "Authorization": f"Bearer {access_token}",
+    "Accept": "application/vnd.github+json"
+}
+
+# Organization name
+org_name = "YOUR_ORGANIZATION_NAME"
+
+# Send a GET request to the GitHub API to list repositories
+response = requests.get(api_url.format(org=org_name), headers=headers)
+
+# Check if the request was successful
+if response.status_code == 200:
+    # Parse the JSON response
+    repos = response.json()
+
+    # Iterate over each repository
+    for repo in repos:
+        repo_name = repo["name"]
+        secrets_url = f"https://api.github.com/repos/{org_name}/{repo_name}/actions/secrets"
+
+        # Send a GET request to check if the repository has secrets
+        secrets_response = requests.get(secrets_url, headers=headers)
+
+        if secrets_response.status_code == 200:
+            secrets = secrets_response.json()
+            if secrets["total_count"] > 0:
+                print(f"{repo_name} is using GitHub Secrets.")
+        else:
+            print(f"Failed to retrieve secrets for {repo_name}. Status code: {secrets_response.status_code}")
+else:
+    print(f"Failed to retrieve repositories. Status code: {response.status_code}")
+Steps to accomplish this:
+
+Install the requests library if you haven't already:
+Copypip install requests
+
+Replace "YOUR_PERSONAL_ACCESS_TOKEN" with your actual GitHub personal access token. Make sure the token has the necessary permissions to access repositories and secrets in your organization.
+Replace "YOUR_ORGANIZATION_NAME" with the name of your GitHub organization.
+Run the Python script.
+
+Explanation:
+
+The script starts by defining the GitHub API endpoint for listing repositories in an organization. The {org} placeholder will be replaced with the actual organization name.
+It sets the access_token variable with your GitHub personal access token, which is used for authentication.
+The headers variable is defined with the necessary headers for authentication and specifying the desired API version.
+The org_name variable is set to the name of your GitHub organization.
+The script sends a GET request to the GitHub API endpoint to list repositories in the specified organization using requests.get().
+If the request is successful (status code 200), it parses the JSON response and iterates over each repository.
+For each repository, it constructs the URL for retrieving the repository's secrets using the repository name.
+It sends another GET request to check if the repository has any secrets.
+If the secrets request is successful and the total_count is greater than zero, it prints a message indicating that the repository is using GitHub Secrets.
+If the secrets request fails, it prints an error message along with the status code.
+If the initial request to list repositories fails, it prints an error message with the status code.
+
+Note: Make sure to handle the GitHub API rate limits and pagination if your organization has a large number of repositories. You may need to add additional logic to handle pagination and rate limiting.
+Also, ensure that your personal access token has the necessary permissions to access repositories and secrets in your organization.
+This script provides a starting point for pulling repositories that are using GitHub Secrets in your organization. You can further extend and customize it based on your specific requirements.
