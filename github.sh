@@ -19,7 +19,7 @@ output_file="output.csv"
 response=$(curl -s -H "${headers[0]}" -H "${headers[1]}" "${api_url}")
 
 # Check if the request was successful
-if [[ $(echo "$response" | jq 'length') -gt 0 ]]; then
+if [[ $(echo "$response" | jq -r 'type') == "array" ]]; then
     # Extract repository names from the response
     repo_names=($(echo "$response" | jq -r '.[].name'))
 
@@ -33,8 +33,8 @@ if [[ $(echo "$response" | jq 'length') -gt 0 ]]; then
         # Send a GET request to check if the repository has secrets
         secrets_response=$(curl -s -H "${headers[0]}" -H "${headers[1]}" "${secrets_url}")
 
-        if [[ $(echo "$secrets_response" | jq 'has("total_count")') == "true" ]]; then
-            secrets_count=$(echo "$secrets_response" | jq '.total_count')
+        if [[ $(echo "$secrets_response" | jq -r 'has("total_count")') == "true" ]]; then
+            secrets_count=$(echo "$secrets_response" | jq -r '.total_count')
             if [[ $secrets_count -gt 0 ]]; then
                 echo "${repo_name},Yes" >> "$output_file"
             else
