@@ -1,5 +1,7 @@
 #!/bin/bash
 
+output_file="aws_old_keys_report.txt"
+
 # Function to check user and their access keys
 check_user() {
     local profile=$1
@@ -14,18 +16,21 @@ check_user() {
             age=$(( ($(date +%s) - $(date -d "$create_date" +%s)) / 86400 ))
             
             if [ $age -gt 170 ]; then
-                echo "Profile: $profile, User: $user, Key: $key, Age: $age days"
+                echo "Profile: $profile, User: $user, Key: $key, Age: $age days" >> "$output_file"
             fi
         fi
     done <<< "$keys"
 }
+
+# Clear the output file if it exists
+> "$output_file"
 
 # Get all profiles from AWS credentials file
 profiles=$(grep '^\[' ~/.aws/credentials | sed 's/\[//g' | sed 's/\]//g')
 
 # Iterate through all profiles
 for profile in $profiles; do
-    echo "Checking profile: $profile"
+    echo "Checking profile: $profile" >> "$output_file"
     # List all users for the current profile
     users=$(aws iam list-users --profile "$profile" --query 'Users[*].UserName' --output text)
     
@@ -34,3 +39,5 @@ for profile in $profiles; do
         check_user "$profile" "$user"
     done
 done
+
+echo "Results have been saved to $output_file"
