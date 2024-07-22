@@ -1,51 +1,36 @@
 #!/bin/bash
 
-# Output file
-output_file="iam_users.csv"
-
-# Write header to the output file
-echo "AWS Account,IAM User,Access Key ID,Access Key Age (Days)" > "$output_file"
-
-# Iterate through all AWS profiles in the credentials file
-for profile in $(grep '\[.*\]' ~/.aws/credentials | tr -d '[]'); do
-  echo "Processing account: $profile"
-  
-  # Retrieve IAM users without the tag key "uflip-enabled"
-  users=$(aws iam list-users --profile "$profile" --query 'Users[?!Tags[?Key==`uflip-enabled`]]' --output text | awk '{print $NF}')
-  
-  echo "Found users: $users"
-  
-  # Iterate through each user
-  for user in $users; do
-    echo "Checking user: $user"
+# Function to check user and their access keys
+check_user() {
+    local profile=$1
+    local user=$2
     
-    # Retrieve access keys for the user
-    access_keys=$(aws iam list-access-keys --user-name "$user" --profile "$profile" --output json)
+    # Get access keys for the user
+    keys=$(aws iam list-access-keys --user-name "$user" --profile "$profile" --query 'AccessKeyMetadata[?Status==`Active`].[AccessKeyId,CreateDate]' --output text)
     
-    echo "Access keys: $access_keys"
-    
-    # Check each access key
-    for access_key in $(echo "$access_keys" | jq -r '.AccessKeyMetadata[].AccessKeyId'); do
-      echo "Checking access key: $access_key"
-      
-      # Get the access key details
-      access_key_details=$(aws iam get-access-key-last-used --access-key-id "$access_key" --profile "$profile")
-      
-      echo "Access key details: $access_key_details"
-      
-      # Check if the access key is active and older than 170 days
-      last_used_date=$(echo "$access_key_details" | jq -r '.AccessKeyLastUsed.LastUsedDate')
-      if [[ -n "$last_used_date" ]]; then
-        current_date=$(date +%Y-%m-%d)
-        key_age=$(( ($(date -d "$current_date" +%s) - $(date -d "$last_used_date" +%s)) / 86400 ))
-        echo "Access key age: $key_age days"
-        if [[ $key_age -gt 170 ]]; then
-          echo "Adding user to output: $profile,$user,$access_key,$key_age"
-          echo "$profile,$user,$access_key,$key_age" >> "$output_file"
+    while read -r key create_date; do
+        if [ -n "$key" ] && [ -n "$create_date" ]; then
+            # Calculate the age of the key in days
+            age=$(( ($(date +%s) - $(date -d "$create_date" +%s)) / 86400 ))
+            
+            if [ $age -gt 170 ]; then
+                echo "Profile: $profile, User: $user, Key: $key, Age: $age days"
+            fi
         fi
-      fi
-    done
-  done
-done
+    done <<< "$keys"
+}
 
-echo "IAM user information has been exported to $output_file"
+# Get all profiles from AWS credentials file
+profiles=$(grep '^\[' ~/.aws/credentials | sed 's/\[//g' | sed 's/\]//g')
+
+# Iterate through all profiles
+for profile in $profiles; do
+    echo "Checking profile: $profile"
+    # List all users for the current profile
+    users=$(aws iam list-users --profile "$profile" --query 'Users[*].UserName' --output text)
+    
+    # Check each user
+    for user in $users; do
+        check_user "$profile" "$user"
+    done
+done
