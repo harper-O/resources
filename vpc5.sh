@@ -11,6 +11,20 @@ fi
 AWS_REGION=$1
 AWS_PROFILE=$2
 
+# Check if credentials are available
+if ! aws sts get-caller-identity --profile $AWS_PROFILE --region $AWS_REGION &> /dev/null; then
+    echo "Error: Unable to locate credentials for profile $AWS_PROFILE"
+    echo "Please check your AWS credentials configuration."
+    exit 1
+fi
+
+# Check if region and profile are provided as arguments
+if [ $# -ne 2 ]; then
+    echo "Please provide the AWS region and profile as arguments."
+    echo "Usage: $0 <aws-region> <aws-profile>"
+    exit 1
+fi
+
 # Set the S3 bucket for flow logs (dynamic based on profile)
 S3_BUCKET="${AWS_PROFILE}-cloudtrail-bucket"
 
