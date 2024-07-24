@@ -39,8 +39,17 @@ fi
 LOG_FORMAT='${version} ${account-id} ${az-id} ${flow-direction} ${instance-id} ${interface-id} ${srcaddr} ${dstaddr} ${srcport} ${dstport} ${protocol} ${packets} ${bytes} ${start} ${end} ${action} ${log-status} ${pkt-dst-aws-service} ${pkt-dstaddr} ${pkt-src-aws-service} ${pkt-srcaddr} ${region} ${sublocation-id} ${sublocation-type} ${subnet-id} ${tcp-flags} ${traffic-path} ${type} ${type} ${version} ${vpc-id}'
 
 # Loop through each VPC ID in the file and create a flow log
-while IFS= read -r vpc_id
-do
+# Loop through each VPC ID in the file and create a flow log
+while IFS= read -r vpc_id || [[ -n "$vpc_id" ]]; do
+    # Trim whitespace from vpc_id
+    vpc_id=$(echo "$vpc_id" | tr -d '[:space:]')
+    
+    # Validate VPC ID format
+    if [[ ! "$vpc_id" =~ ^vpc-[a-f0-9]{8,17}$ ]]; then
+        echo "Invalid VPC ID format: $vpc_id. Skipping..."
+        continue
+    fi
+
     echo "Creating VPC Flow Log for VPC: $vpc_id"
     
     flow_log_id=$(aws ec2 create-flow-logs \
