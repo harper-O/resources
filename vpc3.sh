@@ -22,7 +22,7 @@ if [ ! -f "$VPC_FILE" ]; then
 fi
 
 # Define custom log format
-LOG_FORMAT='${version} ${account-id} ${interface-id} ${srcaddr} ${dstaddr} ${srcport} ${dstport} ${protocol} ${packets} ${bytes} ${start} ${end} ${action} ${log-status}'
+LOG_FORMAT='${version} ${account-id} ${az-id} ${flow-direction} ${instance-id} ${interface-id} ${srcaddr} ${dstaddr} ${srcport} ${dstport} ${protocol} ${packets} ${bytes} ${start} ${end} ${action} ${log-status} ${pkt-dst-aws-service} ${pkt-dstaddr} ${pkt-src-aws-service} ${pkt-srcaddr} ${region} ${sublocation-id} ${sublocation-type} ${subnet-id} ${tcp-flags} ${traffic-path} ${type} ${type} ${version} ${vpc-id}'
 
 # Loop through each VPC ID in the file and create a flow log
 while IFS= read -r vpc_id
